@@ -1,1 +1,114 @@
-@startuml@startumlskinparam classAttributeIconSize 0skinparam shadowing falseclass "productora" as Productora <<object>> {  - bandasConLasQueTrabaja : List  - asistentes : List  - impuesto : Number  + trabajarConNuevaBanda(unaBanda)  + registrarAsistente(unAsistente)  + entradasVendidas() : List  + cantidadEntradasVendidas() : Number  + recaudacionDeEntradas() : Number  + presupuestoDeBandas() : Number  + gananciaTotal() : Number  + entradasVendidasDe(unaBanda) : Number  + bandaMasPopular() : Banda  + bonificarAsistentes()}class Entrada {  - banda : Banda  - fecha : Date  - precioBase : Number = 1000  + precioFinal() : Number  + esDelAnio(anio) : Boolean}class Asistente {  - abono : Abono  - historialDeEntradas : List  - dineroDisponible : Number  + tieneSaldoPositivo() : Boolean  + comprarEntrada(unaEntrada)  + montoAPagar(unaEntrada) : Number  + pagar(unaEntrada)  + bonificar()  + entradasDelAnioAnterior() : List  + bandasPorLasQueComproEntrada() : Set}class NoPuedeComprarEntradaException {}class Exception <<Wollok>> {}interface Abono {  + precioConDescuento(precio) : Number  + bonificar()}class "fan" as Fan <<object>> {  + precioConDescuento(precio) : Number  + bonificar()}class Vip {  - porcentajeDescuento : Number  + precioConDescuento(precio) : Number  + bonificar()}abstract class Banda {  - nombre : String  + canon() : Number  + presupuesto() : Number  + {abstract} gastoExtra() : Number  + {abstract} popularidad() : Number}class BandaDeRock {  - cantidadSolosGuitarra : Number  + gastoExtra() : Number  + popularidad() : Number}class BandaDeTrap {  - tienenHielo : Boolean  + canon() : Number  + gastoExtra() : Number  + popularidad() : Number}class BandaIndie {  - cantidadDeInstrumentos : Number  + gastoExtra() : Number  + popularidad() : Number}Productora o--> "*" AsistenteProductora o--> "*" BandaEntrada ..> Productora : consulta el impuestoAsistente *--> "*" Entrada : historialDeEntradasAsistente --> "1" Abono : abonoEntrada --> "1" BandaAsistente ..> NoPuedeComprarEntradaException : lanzaNoPuedeComprarEntradaException --|> ExceptionFan ..|> AbonoVip ..|> AbonoBandaDeRock --|> BandaBandaDeTrap --|> BandaBandaIndie --|> Banda@enduml@enduml
+@startuml
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+
+class "productora" as Productora <<object>> {
+  - bandasConLasQueTrabaja : List
+  - asistentes : Set
+  - impuesto : Number
+  + trabajarConNuevaBanda(unaBanda)
+  + registrarAsistente(unAsistente)
+  + emitirEntrada(unaBanda, unaFecha) : Entrada
+  + cantidadEntradasVendidas() : Number
+  + recaudacionDeEntradas() : Number
+  + presupuestoDeBandas() : Number
+  + gananciaTotal() : Number
+  + entradasVendidasDe(unaBanda) : Number
+  + bandaMasPopular() : Banda
+  + bonificarAsistentes()
+}
+
+class Entrada {
+  + banda : Banda
+  + fecha : Date
+  - productora
+  - precioBase : Number = 1000
+  + precioFinal() : Number
+  + esDelAnio(anio) : Boolean
+  + esDeLaBanda(unaBanda) : Boolean
+}
+
+class Asistente {
+  + abono : Abono
+  - historialDeEntradas : List
+  - dineroDisponible : Number
+  + dineroDisponible() : Number
+  + tieneSaldoPositivo() : Boolean
+  + comprarEntrada(unaBanda, unaFecha)
+  + montoAPagar(unaEntrada) : Number
+  + pagar(unaEntrada)
+  + bonificar()
+  + entradasDelAnioAnterior() : List
+  + bandasPorLasQueComproEntrada() : Set
+  + cantidadDeEntradas() : Number
+  + cantidadDeEntradasDe(unaBanda) : Number
+  + gastoTotalEnEntradas() : Number
+}
+
+class NoPuedeComprarEntradaException {
+}
+
+class Exception <<Wollok>> {
+}
+
+interface Abono {
+  + precioConDescuento(precio) : Number
+  + bonificar()
+}
+
+class "fan" as Fan <<object>> {
+  + precioConDescuento(precio) : Number
+  + bonificar()
+}
+
+class Vip {
+  - porcentajeDescuento : Number
+  + porcentajeDescuento() : Number
+  + precioConDescuento(precio) : Number
+  + bonificar()
+}
+
+abstract class Banda {
+  + nombre : String
+  + canon() : Number
+  + presupuesto() : Number
+  + {abstract} gastoExtra() : Number
+  + {abstract} popularidad() : Number
+}
+
+class BandaDeRock {
+  + cantidadSolosGuitarra : Number
+  + gastoExtra() : Number
+  + popularidad() : Number
+}
+
+class BandaDeTrap {
+  + tienenHielo : Boolean
+  + canon() : Number
+  + gastoExtra() : Number
+  + popularidad() : Number
+}
+
+class BandaIndie {
+  - cantidadDeInstrumentos : Number
+  + gastoExtra() : Number
+  + popularidad() : Number
+}
+
+Productora o--> "*" Asistente : asistentes
+Productora o--> "*" Banda : bandasConLasQueTrabaja
+Productora ..> Entrada : emite
+Entrada --> "1" Productora : productora
+Entrada --> "1" Banda : banda
+Asistente *--> "*" Entrada : historialDeEntradas
+Asistente --> "1" Abono : abono
+Asistente ..> Productora : pide emitir entrada
+Asistente ..> NoPuedeComprarEntradaException : lanza
+NoPuedeComprarEntradaException --|> Exception
+Fan ..|> Abono
+Vip ..|> Abono
+BandaDeRock --|> Banda
+BandaDeTrap --|> Banda
+BandaIndie --|> Banda
+
+@enduml

@@ -1,0 +1,116 @@
+import Productora.*
+import Asistente.*
+import Abono.*
+import Banda.*
+import Entradas.*
+
+describe "PDEP Entertainment" {
+  const trap123 = new BandaDeTrap(nombre = "Trap123", tienenHielo = true)
+  const airbag = new BandaDeRock(nombre = "Airbag", cantidadSolosGuitarra = 3)
+  const indie = new BandaIndie(nombre = "Indie", cantidadDeInstrumentos = 2)
+  const fecha = new Date(day = 1, month = 1, year = 2030)
+  const vip = new Vip(porcentajeDescuento = 10)
+  const asistenteVip = new Asistente(abono = vip, dineroDisponible = 5000)
+  const asistenteFan = new Asistente(abono = fan, dineroDisponible = 5000)
+
+  method initialize() {
+    productora.impuesto(0.2)
+    productora.trabajarConNuevaBanda(trap123)
+    productora.trabajarConNuevaBanda(airbag)
+    productora.trabajarConNuevaBanda(indie)
+    productora.registrarAsistente(asistenteVip)
+    productora.registrarAsistente(asistenteFan)
+  }
+
+  test "la entrada suma el impuesto al precio base" {
+    assert.equals(1200, productora.emitirEntrada(airbag, fecha).precioFinal())
+  }
+
+  test "un cambio de impuesto impacta en las entradas" {
+    const entrada = productora.emitirEntrada(airbag, fecha)
+    productora.impuesto(0.5)
+    assert.equals(1500, entrada.precioFinal())
+  }
+
+  test "presupuesto y popularidad del rock" {
+    assert.equals(1010000, airbag.presupuesto())
+    assert.equals(300, airbag.popularidad())
+  }
+
+  test "el canon del trap depende de su popularidad" {
+    assert.equals(1000000000, trap123.canon())
+    trap123.tienenHielo(false)
+    assert.equals(0, trap123.canon())
+  }
+
+  test "presupuesto y popularidad del indie" {
+    assert.equals(1001000, indie.presupuesto())
+    assert.equals(3.14 * 5, indie.popularidad())
+  }
+
+  test "el fan paga el precio completo y el vip con descuento" {
+    asistenteFan.comprarEntrada(airbag, fecha)
+    asistenteVip.comprarEntrada(airbag, fecha)
+    assert.equals(3800, asistenteFan.dineroDisponible())
+    assert.equals(3920, asistenteVip.dineroDisponible())
+  }
+
+  test "la compra agrega la entrada al historial" {
+    asistenteFan.comprarEntrada(airbag, fecha)
+    assert.equals(1, asistenteFan.cantidadDeEntradas())
+  }
+
+  test "con saldo no positivo no se puede comprar y no cambia nada" {
+    const pobre = new Asistente(abono = fan, dineroDisponible = 0)
+    assert.throwsExceptionWithMessage("No puede comprar entrada, tiene saldo negativo :(", { pobre.comprarEntrada(airbag, fecha) })
+    assert.equals(0, pobre.dineroDisponible())
+    assert.equals(0, pobre.cantidadDeEntradas())
+  }
+
+  test "el dinero puede quedar negativo despues de comprar" {
+    const justo = new Asistente(abono = fan, dineroDisponible = 1)
+    justo.comprarEntrada(airbag, fecha)
+    assert.that(justo.dineroDisponible() < 0)
+  }
+
+  test "bandas por las que compro entrada sin repetir" {
+    asistenteFan.comprarEntrada(airbag, fecha)
+    asistenteFan.comprarEntrada(airbag, fecha)
+    asistenteFan.comprarEntrada(indie, fecha)
+    assert.equals(#{"Airbag", "Indie"}, asistenteFan.bandasPorLasQueComproEntrada())
+  }
+
+  test "entradas del anio anterior" {
+    const anioAnterior = new Date().year() - 1
+    asistenteFan.comprarEntrada(airbag, new Date(day = 1, month = 6, year = anioAnterior))
+    asistenteFan.comprarEntrada(airbag, fecha)
+    assert.equals(1, asistenteFan.entradasDelAnioAnterior().size())
+  }
+
+  test "bonificar sube 1% al vip y no afecta al fan" {
+    productora.bonificarAsistentes()
+    assert.equals(11, vip.porcentajeDescuento())
+    assert.equals(1000, fan.precioConDescuento(1000))
+  }
+
+  test "el gasto total del asistente suma las entradas sin descuento" {
+    asistenteVip.comprarEntrada(airbag, fecha)
+    asistenteVip.comprarEntrada(indie, fecha)
+    assert.equals(2400, asistenteVip.gastoTotalEnEntradas())
+  }
+
+  test "reportes de la productora" {
+    asistenteFan.comprarEntrada(airbag, fecha)
+    asistenteVip.comprarEntrada(airbag, fecha)
+    asistenteVip.comprarEntrada(indie, fecha)
+    assert.equals(3, productora.cantidadEntradasVendidas())
+    assert.equals(3600, productora.recaudacionDeEntradas())
+    assert.equals(airbag, productora.bandaMasPopular())
+    assert.equals(3600 - (1010000 + 1001000 + 1000000000), productora.gananciaTotal())
+  }
+
+  test "sin entradas vendidas la ganancia es negativa y no falla" {
+    assert.equals(0, productora.cantidadEntradasVendidas())
+    assert.equals(-1002011000, productora.gananciaTotal())
+  }
+}
